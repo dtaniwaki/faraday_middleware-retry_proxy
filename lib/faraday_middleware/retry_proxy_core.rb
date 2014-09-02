@@ -7,8 +7,7 @@ module FaradayMiddleware
       proxies = self.normalize_proxies(env[:request][:proxy])
       request_body = env[:body]
       begin
-        proxy = proxies.pop
-        env[:request][:proxy] = proxy ? {uri: URI.parse(proxy)} : nil
+        env[:request][:proxy] = proxies.pop
         env[:body] = request_body
         @app.call(env)
       rescue *TARGET_ERRORS => exception
@@ -24,7 +23,7 @@ module FaradayMiddleware
       if proxy.respond_to?(:call)
         proxy = proxy.call(self)
       end
-      proxy ? Array(proxy) : []
+      proxies = proxy ? Array(proxy) : []
     end
   end
 end

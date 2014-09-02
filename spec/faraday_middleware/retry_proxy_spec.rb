@@ -58,11 +58,11 @@ RSpec.describe FaradayMiddleware::RetryProxy do
   describe "#normalize_proxies" do
     it "returns a proxy as an array" do
       proxies = subject.normalize_proxies('a')
-      expect(proxies).to eq ['a']
+      expect(proxies).to eq [{uri: 'a', user: nil, password: nil}]
     end
     it "returns an array of proxies" do
       proxies = subject.normalize_proxies(['a', 'b'])
-      expect(proxies).to eq ['a', 'b']
+      expect(proxies).to eq [{uri: 'a', user: nil, password: nil}, {uri: 'b', user: nil, password: nil}]
     end
     context "nil" do
       it "returns empty array" do
@@ -79,11 +79,11 @@ RSpec.describe FaradayMiddleware::RetryProxy do
     context "proc" do
       it "returns a proxy from the proc as an array" do
         proxies = subject.normalize_proxies(lambda{ |env| 'a' })
-        expect(proxies).to eq ['a']
+        expect(proxies).to eq [{uri: 'a', user: nil, password: nil}]
       end
       it "returns an array of proxies from the proc as an array" do
         proxies = subject.normalize_proxies(lambda{ |env| ['a', 'b'] })
-        expect(proxies).to eq ['a', 'b']
+        expect(proxies).to eq [{uri: 'a', user: nil, password: nil}, {uri: 'b', user: nil, password: nil}]
       end
     end
   end

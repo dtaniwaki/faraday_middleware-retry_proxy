@@ -24,5 +24,10 @@ module FaradayMiddleware
       super(app)
       @options = Options.from(options)
     end
+
+    def normalize_proxies(proxy)
+      proxies = super
+      proxies.map{ |p| Faraday::ProxyOptions.from(p) }
+    end
   end
 end
