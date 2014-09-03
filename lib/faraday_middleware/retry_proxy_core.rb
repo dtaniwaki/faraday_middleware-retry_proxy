@@ -12,7 +12,7 @@ module FaradayMiddleware
         @app.call(env)
       rescue *TARGET_ERRORS => exception
         if proxies.size > 0
-          sleep (1 + SecureRandom.random_number * @options[:interval_randomness].to_f) * @options[:interval].to_f
+          sleep (1 + rand * @options[:interval_randomness].to_f) * @options[:interval].to_f
           retry
         end
         raise
