@@ -1,27 +1,33 @@
 require 'spec_helper'
 
 RSpec.describe FaradayMiddleware::RetryProxy do
-  let(:subject_klass) { FaradayMiddleware::RetryProxy }
-  let(:app) { double }
+  let(:app) { lambda{ |env| env } }
   let(:request) { {} }
   let(:env) { {request: request, body: nil} }
-  before do
-    allow(app).to receive(:call)
-  end
-  subject { subject_klass.new app }
+  let(:error) { Faraday::Error::TimeoutError.new }
+  let(:options) { nil }
+  subject { described_class.new app, *Array(options) }
 
   describe "#call" do
     let(:request) { {proxy: ['x', 'y', 'z']} }
-    let(:error) { Faraday::Error::TimeoutError.new }
-    it "retries with proxy" do
-      expect(app).to receive(:call).with(env).exactly(3).times.and_raise error
-      expect {
-        subject.call(env)
-      }.to raise_error(error)
+    context "all proxies are dead" do
+      let(:app) { lambda{ |env| raise error } }
+      it "retries with proxy and raises an error" do
+        expect {
+          subject.call(env)
+        }.to raise_error(error)
+      end
+    end
+    context "some of the proxies are dead" do
+      let(:app) { idx = 0; lambda{ |env| idx += 1; raise error if idx == 1 } }
+      it "retries with proxy" do
+        expect {
+          subject.call(env)
+        }.not_to raise_error
+      end
     end
     context "request succeeds" do
       it "does not retry with proxy" do
-        expect(app).to receive(:call).with(env).exactly(1).times.and_return nil
         expect {
           subject.call(env)
         }.not_to raise_error
@@ -37,16 +43,16 @@ RSpec.describe FaradayMiddleware::RetryProxy do
       end
     end
     context "interval option" do
-      subject { subject_klass.new app, interval: 0.5 }
+      let(:options) { [{interval: 0.5}] }
+      let(:app) { idx = 0; lambda{ |env| idx += 1; raise error if idx == 1 } }
       it "retries with interval" do
-        expect(app).to receive(:call).with(env).and_raise error
         expect(subject).to receive(:sleep).with(0.5).and_return nil
         subject.call(env)
       end
       context "interval_randomness option" do
-        subject { subject_klass.new app, interval: 1, interval_randomness: 0.5 }
+        let(:options) { [{interval: 0.5, interval_randomness: 0.5}] }
+        let(:app) { idx = 0; lambda{ |env| idx += 1; raise error if idx == 1 } }
         it "retries with interval" do
-          expect(app).to receive(:call).with(env).and_raise error
           expect(subject).to receive(:sleep) do |time|
             expect(time).to be_within(0.5).of(1)
           end
